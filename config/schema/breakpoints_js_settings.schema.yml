@@ -9,14 +9,17 @@ breakpoint_js_settings.settings:
         type: mapping
         label: 'Breakpoint definition'
         mapping:
+          breakpoint_id:
+            type: string
+            label: 'Breakpoint id'
           breakpoint_name:
             type: string
-            label: 'Breakpoint name'
+            label: 'Visible name'
           breakpoint_min_width:
             type: integer
             label: 'Min width'
 
-    device_mapping:
+    device_mappings:
       type: sequence
       label: 'Device Mappings'
       sequence:
@@ -26,6 +29,6 @@ breakpoint_js_settings.settings:
           device:
             type: string
             label: 'Device type'
-          breakpoint_name:
+          breakpoint_id:
             type: string
-            label: 'Breakpoint name'
+            label: 'Breakpoint id'

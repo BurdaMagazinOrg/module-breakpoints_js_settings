@@ -1,0 +1,25 @@
+<?php
+
+/**
+ * Implements hook_page_attachments().
+ */
+function breakpoint_js_settings_page_attachments(array &$page) {
+  $config = \Drupal::config('breakpoint_js_settings.settings');
+
+  $breakpoint_default = $config->get('breakpoints');
+  $device_mapping_default = array_column($config->get('device_mappings'), 'device', 'breakpoint_id');
+  $responsive_settings = ['Breakpoints' => [], 'DeviceMapping' => []];
+
+  foreach($breakpoint_default as $breakpoint) {
+    $breakpoint_name = $breakpoint['breakpoint_name'];
+    $breakpoint_id = $breakpoint['breakpoint_id'];
+    $min_width = $breakpoint['breakpoint_min_width'];
+    $responsive_settings['Breakpoints'][$breakpoint_name] = $min_width;
+    if(!empty($device_mapping_default[$breakpoint_id])) {
+      $device = $device_mapping_default[$breakpoint_id];
+      $responsive_settings['DeviceMapping'][$device] = $breakpoint_name;
+    }
+  }
+
+  $page['#attached']['drupalSettings']['Responsive'] = $responsive_settings;
+}

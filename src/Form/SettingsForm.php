@@ -33,7 +33,10 @@ class SettingsForm extends ConfigFormBase {
    * @param BreakpointManagerInterface $breakpoint_manager
    *  The token object.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, BreakpointManagerInterface $breakpoint_manager) {
+  public function __construct(
+    ConfigFactoryInterface $config_factory,
+    BreakpointManagerInterface $breakpoint_manager
+  ) {
     parent::__construct($config_factory);
     $this->breakpointManager = $breakpoint_manager;
   }
@@ -42,9 +45,7 @@ class SettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('config.factory'),
-      $container->get('breakpoint.manager')
+    return new static($container->get('config.factory'), $container->get('breakpoint.manager')
     );
   }
 
@@ -59,37 +60,74 @@ class SettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $definitions = $this->config('breakpoint_js_settings.definitions');
+    $definitions = $this->config('breakpoint_js_settings.settings');
+
+    // get re-indexed default values
+    $breakpoint_default = array_column($definitions->get('breakpoints'), NULL, 'breakpoint_id');
+    $device_mapping_default = array_column($definitions->get('device_mappings'), 'breakpoint_id', 'device');
 
     $form['min_width'] = array(
       '#type' => 'details',
       '#title' => t('Min-widths for breakpoints'),
       '#open' => TRUE,
-      '#description' => t('Define min-witdh for given breakpoint, keep empty if you do not wish to use this breakpoint. The breakpoints are extracted from all definitions found in corresponting *.breakpoint.yml files')
+      '#description' => t('Define min-width for given breakpoint, keep empty if you do not wish to use this breakpoint. The breakpoints are extracted from all definitions found in corresponting *.breakpoint.yml files')
+    );
+    $form['device_mapping'] = array(
+      '#type' => 'details',
+      '#title' => t('Map devices to breakpoint'),
+      '#open' => TRUE,
+      '#tree' => TRUE,
+      '#description' => t('map device types to the breakpoints')
     );
 
-    $breakpoint_default = $definitions->get('breakpoints');
     foreach ($this->breakpointManager->getDefinitions() as $name => $definition) {
-      $element_name = str_replace('.', '_', $name) . '_width';
-      $default_value = '';
-      foreach ($breakpoint_default as $defaults) {
-        if ($defaults['breakpoint_name'] == $element_name) {
-          $default_value = $defaults['breakpoint_min_width'];
-          break;
-        }
-      }
+      $element_name = str_replace('.', '_', $name);
+      $default_width = $breakpoint_default[$name]['breakpoint_min_width'];
+      $default_name = $breakpoint_default[$name]['breakpoint_name'];
 
       $form['min_width'][$element_name] = [
-        '#type' => 'textfield',
+        '#type' => 'fieldgroup',
         '#title' => $name,
-        '#size' => 10,
-        '#field_suffix' => 'px',
-        '#placeholder' => 'min-width',
-        '#default_value' => $default_value,
+        '#tree' => TRUE,
         '#description' => t('Media query for @name is "@query"', array(
           '@name' => $name,
           '@query' => $definition['mediaQuery']
-        ))
+        )
+        )
+      ];
+      $form['min_width'][$element_name]['id'] = [
+        '#type' => 'hidden',
+        '#value' => $name,
+      ];
+      $form['min_width'][$element_name]['name'] = [
+        '#type' => 'textfield',
+        '#title' => 'Name',
+        '#size' => 10,
+        '#default_value' => $default_name,
+      ];
+      $form['min_width'][$element_name]['min_width'] = [
+        '#type' => 'textfield',
+        '#title' => 'Min-width',
+        '#size' => 10,
+        '#field_suffix' => 'px',
+        '#default_value' => $default_width,
+      ];
+    }
+
+    $devices = ['mobile', 'tablet', 'desktop'];
+
+    foreach (array_keys($this->breakpointManager->getDefinitions()) as $definition) {
+      $options[$definition] = $definition;
+    }
+    foreach ($devices as $device) {
+      $default_mapping = $device_mapping_default[$device];
+
+      $form['device_mapping'][$device]['breakpoint'] = [
+        '#type' => 'select',
+        '#title' => $device,
+        '#options' => $options,
+        '#empty_value' => '',
+        '#default_value' => $default_mapping,
       ];
     }
     return parent::buildForm($form, $form_state);
@@ -103,23 +141,30 @@ class SettingsForm extends ConfigFormBase {
     $values = $form_state->getValues();
 
     $breakpoints = [];
+    $mappings = [];
     foreach (Element::children($form['min_width']) as $width_child) {
-      if ($values[$width_child] !== '') {
+      $width_child_values = $values[$width_child];
+      if ($width_child_values['name'] !== '') {
         $breakpoints[] = [
-          'breakpoint_name' => $width_child,
-          'breakpoint_min_width' => $values[$width_child]
+          'breakpoint_id' => $width_child_values['id'],
+          'breakpoint_name' => $width_child_values['name'],
+          'breakpoint_min_width' => $width_child_values['min_width']
         ];
       }
     }
-    $config = $this->configFactory()
-      ->getEditable('breakpoint_js_settings.definitions');
-    $config->set('breakpoints', $breakpoints)->save();
 
-//    $config->set('ad_rubric_default', $values['ad_rubric_default'])
-//      ->set('ad_rubric_overridable', $values['ad_rubric_overridable'])
-//      ->set('ad_ressort_default', $values['ad_ressort_default'])
-//      ->set('ad_ressort_overridable', $values['ad_ressort_overridable'])
-//      ->save();
+    foreach ($values['device_mapping'] as $device => $value) {
+      $mappings[] = [
+        'device' => $device,
+        'breakpoint_id' => $value['breakpoint'],
+      ];
+    }
+
+    $config = $this->configFactory()
+      ->getEditable('breakpoint_js_settings.settings');
+    $config->set('breakpoints', $breakpoints)
+      ->set('device_mappings', $mappings)
+      ->save();
   }
 
 
@@ -127,8 +172,6 @@ class SettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   protected function getEditableConfigNames() {
-    return [
-      'breakpoint_js_settings.settings',
-    ];
+    return ['breakpoint_js_settings.settings'];
   }
 }
