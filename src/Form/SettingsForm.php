@@ -114,7 +114,7 @@ class SettingsForm extends ConfigFormBase {
       ];
     }
 
-    $devices = ['mobile', 'tablet', 'desktop'];
+    $devices = ['smartphone', 'tablet', 'desktop'];
 
     foreach (array_keys($this->breakpointManager->getDefinitions()) as $definition) {
       $options[$definition] = $definition;
