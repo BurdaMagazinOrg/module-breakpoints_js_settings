@@ -70,7 +70,7 @@ class SettingsForm extends ConfigFormBase {
       '#type' => 'details',
       '#title' => t('Min-widths for breakpoints'),
       '#open' => TRUE,
-      '#description' => t('Define min-width for given breakpoint, keep empty if you do not wish to use this breakpoint. The breakpoints are extracted from all definitions found in corresponting *.breakpoint.yml files')
+      '#description' => t('Define min-width for given breakpoint, keep empty if you do not wish to use this breakpoint. The breakpoints are extracted from all definitions found in corresponding *.breakpoint.yml files')
     );
     $form['device_mapping'] = array(
       '#type' => 'details',
