@@ -82,8 +82,8 @@ class SettingsForm extends ConfigFormBase {
 
     foreach ($this->breakpointManager->getDefinitions() as $name => $definition) {
       $element_name = str_replace('.', '_', $name);
-      $default_width = $breakpoint_default[$name]['breakpoint_min_width'];
-      $default_name = $breakpoint_default[$name]['breakpoint_name'];
+      $default_width = !empty($breakpoint_default[$name]['breakpoint_min_width']) ? $breakpoint_default[$name]['breakpoint_min_width'] : 0;
+      $default_name = !empty($breakpoint_default[$name]['breakpoint_name']) ? $breakpoint_default[$name]['breakpoint_name'] : '';
 
       $form['min_width'][$element_name] = [
         '#type' => 'fieldgroup',
