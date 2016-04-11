@@ -53,6 +53,4 @@ function breakpoint_js_settings_page_attachments(array &$page) {
     ],
     'breakpoint_settings_loader'
   ];
-
-  //$page['#attached']['drupalSettings']['Responsive'] = $responsive_settings;
 }
